@@ -54,7 +54,7 @@ public class VTextView extends View {
 	int width;
 	int height;
 
-	public boolean virtical = true;
+	public boolean mVertical = true;
 
 
 	//methods
@@ -182,7 +182,7 @@ public class VTextView extends View {
 
 
 	public void toggleMode(){
-		this.virtical = !this.virtical;
+		this.mVertical = !this.mVertical;
 		//this.textIndex = pageIndex[currentIndex];
 		this.invalidate();
 	}
@@ -204,17 +204,17 @@ public class VTextView extends View {
 		float fontSpacing = style.fontSpace;//paint.getFontSpacing();	
 		float halfOffset = 0;//縦書き半角文字の場合の中央寄せ
 		//半角チェック　縦書きの場合 座標の基準値の扱いが縦横で変わるので、分割
-		if( virtical && checkHalf( s) ){
+		if( mVertical && checkHalf( s) ){
 			pos.y -= fontSpacing / 2;
 		}
-		if( virtical ){//縦書き半角文字の場合の中央寄せ
+		if(mVertical){//縦書き半角文字の場合の中央寄せ
 			if ( setting == null && s.getBytes().length < 2 ){
 				halfOffset = 0.2f;
 			}
 		}
 		//描画スキップのフラグ
 		if( drawEnable ){
-			if (setting == null || !virtical) {
+			if (setting == null || !mVertical) {
 				// 文字設定がない場合、そのまま描画
 				canvas.drawText(s, pos.x + fontSpacing * halfOffset , pos.y, style.paint);
 			} else {
@@ -228,7 +228,7 @@ public class VTextView extends View {
 			}
 		}
 		//半角チェック　横書きの場合
-		if( !virtical && checkHalf( s) ){
+		if( !mVertical && checkHalf( s) ){
 			pos.x -= fontSpacing / 2;
 		}
 	}
@@ -245,7 +245,7 @@ public class VTextView extends View {
 
 	//改行処理。次の行が書ければtrue 端に到達したらfalse
 	boolean goNextLine(PointF pos , TextStyle type, float spaceRate){
-		if(virtical){
+		if(mVertical){
 			pos.x -= type.lineSpace * spaceRate;
 			pos.y = TOP_SPACE + type.fontSpace;	
 			if( pos.x > 0 ){
@@ -267,7 +267,7 @@ public class VTextView extends View {
 	//次の位置へカーソル移動　次の行が書ければtrue 端に到達したらfalse
 	boolean goNext(String s, PointF pos , TextStyle type , boolean lineChangable){
 		boolean newLine = false;
-		if ( virtical ){
+		if (mVertical){
 			if( pos.y + type.fontSpace > height - BOTTOM_SPACE) {
 				// もう文字が入らない場合
 				newLine = true;
@@ -286,7 +286,7 @@ public class VTextView extends View {
 			// 文字を送る
 			float fontSpace = type.fontSpace;
 			//if(checkHalf( s )) fontSpace /= 2;
-			if(virtical){
+			if(mVertical){
 				pos.y += fontSpace;
 			}else{
 				pos.x += fontSpace;
@@ -296,7 +296,7 @@ public class VTextView extends View {
 	}
 
 	void initPos(PointF pos){
-		if(virtical){
+		if(mVertical){
 			pos.x = width - bodyStyle.lineSpace;
 			pos.y = TOP_SPACE + bodyStyle.fontSpace;
 		}else{
@@ -308,7 +308,7 @@ public class VTextView extends View {
 	//縦書きと横書きの基準値座標の差を吸収する
 	PointF getHeadPos(PointF pos, TextStyle style){
 		PointF res = new PointF();
-		if(virtical){
+		if(mVertical){
 			res.x = pos.x;
 			//res.y = pos.y-style.fontSpace;
 			res.y = pos.y;
@@ -322,7 +322,7 @@ public class VTextView extends View {
 
 	PointF getRubyPos(CurrentState state){
 		PointF res = new PointF();
-		if(virtical){
+		if(mVertical){
 			res.x = state.rubyStart.x + bodyStyle.fontSpace;//一文字ずらして表示
 			res.y = state.rubyStart.y - rubyStyle.fontSpace;//縦書きの場合は基準がずれているため補正
 			if( state.pos.y-state.rubyStart.y > 0){ //改行が入っていない場合

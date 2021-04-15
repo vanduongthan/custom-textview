@@ -16,7 +16,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -102,7 +101,7 @@ public class VTextLayout extends RelativeLayout{
 			
 			this.invalidate();
 		}*/
-		
+
 		public void setBitMap(Bitmap bmp){
 			this.setImageBitmap(bmp);
 			this.clearAnimation();
@@ -123,7 +122,7 @@ public class VTextLayout extends RelativeLayout{
 			if(image == null ){
 				vTextView.drawPage(canvas, page , this );
 			}else{
-				
+
 				if( !isLoading || this.getDrawable() == null){
 					DrawImageTask task = new DrawImageTask( image , this );
 					//task.execute();
@@ -337,7 +336,7 @@ public class VTextLayout extends RelativeLayout{
 			break;
 		case MotionEvent.ACTION_UP:
 			if( viewPager.scrollDisabled ){//ページングが有効ならクリックでページ送り
-				if( vTextView.virtical ){//縦書きの場合
+				if( vTextView.mVertical){//縦書きの場合
 					int direction =  isClickDirectionLeft ? 1 : -1; //方向によって係数を変える
 					if( direction * touchStartX > direction * vTextView.width /2 ) {
 						if( currentPage > 1 ) {
@@ -414,7 +413,7 @@ public class VTextLayout extends RelativeLayout{
 	
 	
 	public void setVirtical(boolean isVirtical){
-		vTextView.virtical = isVirtical;
+		vTextView.mVertical = isVirtical;
 	}
 	
 	
