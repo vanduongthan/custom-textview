@@ -16,9 +16,9 @@ import java.lang.Character.UnicodeBlock;
 import java.net.URL;
 
 public class VTextView extends View {
+	final String TAG = "duongtv";
 
 	//static params
-	
 	private static final String FONT_PATH = "ipam.ttf";
 	private static final int FONT_COLOR = Color.BLACK;
 	private static final int TOP_SPACE = 18;
@@ -198,7 +198,7 @@ public class VTextView extends View {
 		return false;
 	}
 
-	//文字描画関数
+	//Character drawing
 	public void drawChar(Canvas canvas , String s, PointF pos , TextStyle style, boolean drawEnable){
 		CharSetting setting = CharSetting.getSetting(s);
 		float fontSpacing = style.fontSpace;//paint.getFontSpacing();	
@@ -212,13 +212,13 @@ public class VTextView extends View {
 				halfOffset = 0.2f;
 			}
 		}
-		//描画スキップのフラグ
+		//draw text
 		if( drawEnable ){
 			if (setting == null || !mVertical) {
-				// 文字設定がない場合、そのまま描画
+				// normal characters
 				canvas.drawText(s, pos.x + fontSpacing * halfOffset , pos.y, style.paint);
 			} else {
-				// 文字設定が見つかったので、設定に従い描画
+				// special characters
 				canvas.save();
 				canvas.rotate(setting.angle, pos.x, pos.y);
 				canvas.drawText(s,
@@ -227,13 +227,14 @@ public class VTextView extends View {
 				canvas.restore();
 			}
 		}
-		//半角チェック　横書きの場合
+		//Half-width check for horizontal writing
 		if( !mVertical && checkHalf( s) ){
 			pos.x -= fontSpacing / 2;
 		}
 	}
-	//文字列描画関数
+	//String drawing function
 	public boolean drawString(Canvas canvas , String s, PointF pos, TextStyle style , boolean drawEnable){
+		Log.d("drawString", "drawString: "+ s);
 		for(int i =0; i< s.length(); i++){
 			drawChar(canvas , s.charAt(i)+"", pos, style ,drawEnable);
 			if ( !goNext( s, pos , style , true) ){	
@@ -243,7 +244,7 @@ public class VTextView extends View {
 		return true;
 	}
 
-	//改行処理。次の行が書ければtrue 端に到達したらfalse
+	//Line feed processing. True if the next line is written False when the end is reached
 	boolean goNextLine(PointF pos , TextStyle type, float spaceRate){
 		if(mVertical){
 			pos.x -= type.lineSpace * spaceRate;
@@ -264,7 +265,7 @@ public class VTextView extends View {
 		}
 	}
 
-	//次の位置へカーソル移動　次の行が書ければtrue 端に到達したらfalse
+	//Move the cursor to the next position: true if the next line is written false when the end is reached
 	boolean goNext(String s, PointF pos , TextStyle type , boolean lineChangable){
 		boolean newLine = false;
 		if (mVertical){
@@ -344,7 +345,7 @@ public class VTextView extends View {
 	public void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		this.textDraw( canvas , currentIndex ,true, this);
-		Log.d("draw","draw vtext");
+	//	Log.d(TAG,"draw vtext: "+ text);
 		if( this.totalPage < 0 ) this.calcPages();
 	}
 
@@ -403,8 +404,8 @@ public class VTextView extends View {
 		
 		return null;
 	}
-
 	public boolean textDraw(Canvas canvas ,int page, boolean enable , View v){
+		Log.d(TAG, "textDraw: page:  " + page);
 		CurrentState state = new CurrentState();
 		initPos(state.pos); 
 		initPos(state.rpos);
@@ -413,18 +414,19 @@ public class VTextView extends View {
 		boolean endFlag =true;
 
 		state.isDrawEnable = enable;
-		//タイトルを描字
+		//draw title of page 0
 		if(page == 0){
+			//Log.d(TAG, "textDraw: 0:  ");
 			state.isTitle=true;
 			state.isRubyEnable = false;
 			state.sAfter ="";//タイトルの時は先読みはしない
 			for ( int i =0; i < title.length(); i++) {
 				state.lineChangable = true;
 				state.str = title.charAt(i)+"";
-
+				Log.d(TAG, "drawText: "+ state.str);
 				charDrawProcess(canvas, state);
 			}
-			//改行と一行空行を入れる
+			//Insert a line break and a blank line
 			state.str = "\n";
 			charDrawProcess(canvas, state);
 			//textDrawProcess(canvas, state);
@@ -440,25 +442,25 @@ public class VTextView extends View {
 			if( pageIndex[page+1] < text.length() ){
 				return false;
 			} else {
-				return true;
+				return true; //draw finish
 			}
 		}
 
 
-		//描画
+		//draw all characters
 		for ( ; index < text.length(); index++) {
 			state.lineChangable = true;
 			state.strPrev = state.str;
 			state.str = text.charAt(index)+"";
 			state.sAfter = ( index+1 < text.length() ) ? 
 					text.charAt(index+1)+"" : "";
-
+			Log.d(TAG, "call charDrawProcess:  "+index);
 			if ( !charDrawProcess(canvas, state) ){
 				endFlag = false;
 				break;
 			}
 		}
-		//this.isPageEnd = endFlag;
+		//process break page
 		if( state.hasImage ){
 			pageIndex[page+1] = -(index+2);//負なら挿絵 %$URL$
 		}else{
@@ -468,13 +470,18 @@ public class VTextView extends View {
 		return endFlag;
 	}
 
+	int num = 0;
 	boolean charDrawProcess(Canvas canvas, CurrentState state){
-		//挿絵のエスケープ処理
+		num++;
+		//process special symbol
 		// "%$"が描画されていれば挿絵
+		Log.d(TAG, "charDrawProcess: "+num+ "  ====  "+state.str);
+
+		//stop drawing if there is an image
 		if( state.str.equals("%") && state.sAfter.equals("$") ){
 			this.isNextImage = true;
 			state.hasImage = true;
-			return false; //挿絵があれば描字中止
+			return false;
 		}
 
 		//ルビが振られている箇所とルビ部分の判定
@@ -506,7 +513,7 @@ public class VTextView extends View {
 				state.rubyText = "";
 				return true;
 			}
-			if ( state.str.equals("》") && state.isRuby ){	//ルビ終了
+			if ( state.str.equals("》") && state.isRuby ){	//page end
 				drawString(canvas, state.bodyText, state.pos, bodyStyle , state.isDrawEnable);
 				state.rpos = getRubyPos( state);
 				drawString(canvas, state.rubyText, state.rpos, rubyStyle , state.isDrawEnable);
@@ -519,7 +526,7 @@ public class VTextView extends View {
 				return true;
 			}
 
-			//漢字判定はルビ開始判定の後に行う必要あり
+			//Kanji judgment must be done after ruby start judgment
 			boolean isKanji = ( UnicodeBlock.of(state.str.charAt(0))  == UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS );
 			//Log.d("kanji",state.str +":" + isKanji+state.isKanjiBlock);
 			if( isKanji && !state.isKanjiBlock ){
@@ -540,12 +547,12 @@ public class VTextView extends View {
 				return true;
 			}
 		}
-		//その他通常描字
+		//Other normal drawing
 
-		//タイトルならスタイル変更
+		//Change style for title
 		TextStyle style = state.isTitle? titleStyle:bodyStyle;
 
-		//改行処理
+		//Line feed processing
 		if( state.str.equals("\n")){
 			if( state.strPrev.equals("\n") ){
 				return  this.goNextLine( state.pos , style , (float) 0.5 );
@@ -554,8 +561,8 @@ public class VTextView extends View {
 			}
 
 		}
-		//文字を描画して次へ
-		this.drawChar( canvas , state.str , state.pos , style ,  state.isDrawEnable);
+		//Draw a character and go to the next
+		this.drawChar(canvas , state.str , state.pos , style ,  state.isDrawEnable);
 
 		if( !this.goNext(state.str , state.pos , style , checkLineChangable(state)) ){
 			state.isPageEnd = true;
@@ -564,7 +571,7 @@ public class VTextView extends View {
 			}else{
 				return false;
 			}
-		} 
+		}
 		return true;
 	}
 

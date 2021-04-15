@@ -24,12 +24,12 @@ public class ReversedViewPager extends ViewPager {
 
 	public ReversedViewPager(Context context) {
 		super(context);
-		super.setOnPageChangeListener(reversedOnPageChangeListener);
+		super.addOnPageChangeListener(reversedOnPageChangeListener);
 	}
 
 	public ReversedViewPager(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		super.setOnPageChangeListener(reversedOnPageChangeListener);
+		super.addOnPageChangeListener(reversedOnPageChangeListener);
 	}
 	
 
@@ -61,7 +61,7 @@ public class ReversedViewPager extends ViewPager {
 		}
 		return super.onTouchEvent(event);
 	}
-	
+
 	@Override
 	public void setOnPageChangeListener(OnPageChangeListener listener){
 		this.listener = listener;

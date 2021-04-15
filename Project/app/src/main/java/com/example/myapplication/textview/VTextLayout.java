@@ -120,9 +120,9 @@ public class VTextLayout extends RelativeLayout{
 			//画像が設定されていなければ文字の読み込み
 			String image = vTextView.checkImage(page);
 			if(image == null ){
+				Log.d("duongtv", "onDraw page: ");
 				vTextView.drawPage(canvas, page , this );
 			}else{
-
 				if( !isLoading || this.getDrawable() == null){
 					DrawImageTask task = new DrawImageTask( image , this );
 					//task.execute();
@@ -437,7 +437,7 @@ public class VTextLayout extends RelativeLayout{
 					vTextView.setFont( saveFont.getFontFile().getAbsolutePath() );
 					reset();
 				}else{
-					downloadFont();
+					//downloadFont();
 				}
 				break;
 		}
@@ -465,7 +465,7 @@ public class VTextLayout extends RelativeLayout{
 		});
 
 		// NG(否定的な)ボタンの設定
-		alertDialog.setNegativeButton("NG", new DialogInterface.OnClickListener() {
+		alertDialog.setNegativeButton("No", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 			}
 		});
