@@ -364,8 +364,7 @@ public class VTextView extends View {
 			while( !textDraw( null , current , false, null) ){
 				//描画を無効化して最後のページになるまで進める。
 				current++;
-			}
-			Log.d("page",current+"");
+			}*/
 			totalPage = current-1;
 			return null;
 		}
@@ -423,7 +422,7 @@ public class VTextView extends View {
 			for ( int i =0; i < title.length(); i++) {
 				state.lineChangable = true;
 				state.str = title.charAt(i)+"";
-				Log.d(TAG, "drawText: "+ state.str);
+				//Log.d(TAG, "drawText: "+ state.str);
 				charDrawProcess(canvas, state);
 			}
 			//Insert a line break and a blank line
@@ -454,7 +453,7 @@ public class VTextView extends View {
 			state.str = text.charAt(index)+"";
 			state.sAfter = ( index+1 < text.length() ) ? 
 					text.charAt(index+1)+"" : "";
-			Log.d(TAG, "call charDrawProcess:  "+index);
+			//Log.d(TAG, "call charDrawProcess:  "+index);
 			if ( !charDrawProcess(canvas, state) ){
 				endFlag = false;
 				break;
@@ -475,7 +474,7 @@ public class VTextView extends View {
 		num++;
 		//process special symbol
 		// "%$"が描画されていれば挿絵
-		Log.d(TAG, "charDrawProcess: "+num+ "  ====  "+state.str);
+		//Log.d(TAG, "charDrawProcess: "+num+ "  ====  "+state.str);
 
 		//stop drawing if there is an image
 		if( state.str.equals("%") && state.sAfter.equals("$") ){

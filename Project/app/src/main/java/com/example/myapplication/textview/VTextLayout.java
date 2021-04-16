@@ -202,7 +202,7 @@ public class VTextLayout extends RelativeLayout{
 					container.addView(vTextView);
 					return vTextView;
 				}
-				
+				Log.d("duongtv", "instantiateItem: "+ page);
 				//以降のページはonDrawだけvTextViewの描画関数を使い回し
 				DispView view = new DispView(mContext , page);
 				container.addView(view);
@@ -241,7 +241,7 @@ public class VTextLayout extends RelativeLayout{
 				if( position >= viewPager.totalPage && onPageEndListener != null){
 					onPageEndListener.onPageEnd();
 				}
-					
+				Log.d("duongtv", "onPageSelected: "+position);
 				Log.d("page",currentPage+"");
 			}
 
