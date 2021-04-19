@@ -14,6 +14,9 @@ import android.view.View;
 
 import java.lang.Character.UnicodeBlock;
 import java.net.URL;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class VTextView extends View {
 	final String TAG = "duongtv";
@@ -25,12 +28,14 @@ public class VTextView extends View {
 	private static final int BOTTOM_SPACE = 18;
 	public static final int MAX_PAGE = 1024;
 
-	int TITLE_SIZE = 48;
-	int FONT_SIZE = 32;
-	int RUBY_SIZE = 16;
+	int TITLE_SIZE = 480;
+	int FONT_SIZE = 320;
+	int RUBY_SIZE = 160;
+
+	private int mMarkedIndex = 0;
 
 	//variables
-	
+
 	Context mContext;
 
 	private Typeface mFace;
@@ -39,22 +44,23 @@ public class VTextView extends View {
 	private TextStyle bodyStyle;
 	private TextStyle rubyStyle;// ルビ描字用
 
-	private String text = "eee";
+	String text = "eee";
 	private String title = "タイトル";
 
 	//private int textIndex = 0;
-	private int[] pageIndex = new int[MAX_PAGE];
-	private int currentIndex = 0;
+	int[] pageIndex = new int[MAX_PAGE];
+	private int currentPage = 0;
 	public int totalPage = -1;
 	//private boolean isPageEnd = false;
 	int imageNum = 0;
 	private boolean isNextImage = false;//次に画像がある
 
+	private ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
 
 	int width;
 	int height;
 
-	public boolean mVertical = true;
+	private boolean mVertical = true;
 
 
 	//methods
@@ -83,7 +89,15 @@ public class VTextView extends View {
 		rubyStyle.lineSpace = bodyStyle.lineSpace;
 	}
 
-	private boolean clacPageFlag = false; 
+	private boolean clacPageFlag = false;
+
+	public int getMarkedIndex() {
+		return mMarkedIndex;
+	}
+
+	public void setMarkedIndex(int mMarkIndex) {
+		this.mMarkedIndex = mMarkIndex;
+	}
 
 	public void setTitle(String title){
 		this.title = title;
@@ -95,14 +109,37 @@ public class VTextView extends View {
 		this.reset(true);
 	}
 
+	public boolean getVertical(){
+		return mVertical;
+	}
+
+	public void setVertical(boolean isVertical){
+		mVertical = isVertical;
+	}
+	//set change orientation and calculate page containt marked index
+	public int rotate() throws ExecutionException, InterruptedException {
+		mVertical = !mVertical;
+		totalPage = (int) mExecutorService.submit(new CalculatorPageCallable(this)).get();
+		int page = 0;
+		while(page < MAX_PAGE - 1 && pageIndex[page + 1] <= mMarkedIndex){
+			page++;
+		}
+		Log.d(TAG, "rotate: currentPage: " + currentPage);
+		return page;
+	}
+
 	//指定したページにジャンプ。　例外に注意
 	public void setPage(int page){
-		this.currentIndex = page;
+		this.currentPage = page;
 		this.invalidate();//再描画する
 	}
 
+	public void setCurrentPage(int currentPage){
+		this.currentPage = currentPage;
+	}
+
 	public int getCurrentPage(){
-		return this.currentIndex;
+		return this.currentPage;
 	}
 
 	public int getTotalPage(){
@@ -120,7 +157,7 @@ public class VTextView extends View {
 	public void setFont( String path ){
 		if( path != null) {
 			mFace = Typeface.createFromFile( path );
-			
+
 		} else {
 			mFace = Typeface.create( Typeface.DEFAULT, Typeface.NORMAL);
 		}
@@ -144,7 +181,7 @@ public class VTextView extends View {
 	public void reset(boolean isReDraw){
 		//this.textIndex = 0;
 		this.pageIndex[0] = 0;
-		this.currentIndex = 0;
+		this.currentPage = 0;
 		this.totalPage = -1;
 		//this.isPageEnd = false;
 		this.imageNum = 0;
@@ -201,7 +238,7 @@ public class VTextView extends View {
 	//Character drawing
 	public void drawChar(Canvas canvas , String s, PointF pos , TextStyle style, boolean drawEnable){
 		CharSetting setting = CharSetting.getSetting(s);
-		float fontSpacing = style.fontSpace;//paint.getFontSpacing();	
+		float fontSpacing = style.fontSpace;//paint.getFontSpacing();
 		float halfOffset = 0;//縦書き半角文字の場合の中央寄せ
 		//半角チェック　縦書きの場合 座標の基準値の扱いが縦横で変わるので、分割
 		if( mVertical && checkHalf( s) ){
@@ -237,7 +274,7 @@ public class VTextView extends View {
 		Log.d("drawString", "drawString: "+ s);
 		for(int i =0; i< s.length(); i++){
 			drawChar(canvas , s.charAt(i)+"", pos, style ,drawEnable);
-			if ( !goNext( s, pos , style , true) ){	
+			if ( !goNext( s, pos , style , true) ){
 				return false;
 			}
 		}
@@ -248,7 +285,7 @@ public class VTextView extends View {
 	boolean goNextLine(PointF pos , TextStyle type, float spaceRate){
 		if(mVertical){
 			pos.x -= type.lineSpace * spaceRate;
-			pos.y = TOP_SPACE + type.fontSpace;	
+			pos.y = TOP_SPACE + type.fontSpace;
 			if( pos.x > 0 ){
 				return true;
 			}else {
@@ -257,7 +294,7 @@ public class VTextView extends View {
 		}else{
 			pos.y += type.lineSpace * spaceRate;
 			pos.x = TOP_SPACE ;
-			if( pos.y < height-TOP_SPACE){	
+			if( pos.y < height-TOP_SPACE){
 				return true;
 			}else {
 				return false;
@@ -277,11 +314,11 @@ public class VTextView extends View {
 			if( pos.x + type.fontSpace > width - BOTTOM_SPACE - type.fontSpace ) {
 				// もう文字が入らない場合
 				newLine = true;
-			}	
+			}
 		}
 
 		if (newLine && lineChangable) {
-			// 改行処理 
+			// 改行処理
 			return goNextLine( pos , type , 1);
 		} else {
 			// 文字を送る
@@ -327,7 +364,7 @@ public class VTextView extends View {
 			res.x = state.rubyStart.x + bodyStyle.fontSpace;//一文字ずらして表示
 			res.y = state.rubyStart.y - rubyStyle.fontSpace;//縦書きの場合は基準がずれているため補正
 			if( state.pos.y-state.rubyStart.y > 0){ //改行が入っていない場合
-				res.y -= 0.5* ( state.rubyText.length()*rubyStyle.fontSpace - (state.pos.y-state.rubyStart.y));				
+				res.y -= 0.5* ( state.rubyText.length()*rubyStyle.fontSpace - (state.pos.y-state.rubyStart.y));
 			}
 			if( res.y < TOP_SPACE) res.y = TOP_SPACE;
 		}else{
@@ -344,16 +381,22 @@ public class VTextView extends View {
 	@Override
 	public void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		this.textDraw( canvas , currentIndex ,true, this);
-	//	Log.d(TAG,"draw vtext: "+ text);
-		if( this.totalPage < 0 ) this.calcPages();
+		this.textDraw(canvas , currentPage,true, this);
+		Log.d(TAG,"onDraw VTextView: "+ currentPage);
+		if( this.totalPage < 0 ) {
+			try {
+				this.calcPages();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
-	Handler handler  = new Handler();
-
-	public void calcPages(){
-		PageCountTask task =  new PageCountTask();
-		task.execute(10L, 20L, 30L);
+	public void calcPages() throws ExecutionException, InterruptedException {
+		totalPage = (int)mExecutorService.submit(new CalculatorPageCallable(this)).get();
+		if( onPageCalculateListener != null) onPageCalculateListener.onPageClac(totalPage);
 	}
 
 	class PageCountTask extends AsyncTask<Long, Integer, Double> {
@@ -364,28 +407,28 @@ public class VTextView extends View {
 			while( !textDraw( null , current , false, null) ){
 				//描画を無効化して最後のページになるまで進める。
 				current++;
-			}*/
+			}
 			totalPage = current-1;
 			return null;
 		}
 
 		@Override
 		protected void onPostExecute(Double result) {
-			if( onPageClacListener != null) onPageClacListener.onPageClac(totalPage);
+			if( onPageCalculateListener != null) onPageCalculateListener.onPageClac(totalPage);
 		}
 	};
 
-	
+
 
 	public boolean drawPage(Canvas canvas ,int page , View v){
 		//this.currentIndex = page;
 		return textDraw(canvas ,page, true , v);
 	}
-	
+
 	//そのページが挿絵かどうか判定し、挿絵ならURLを返し、次のページの開始点を更新する。
 	public String checkImage( int page ){
 		int index = pageIndex[page];
-		
+
 		if( index < 0 ){
 			String urlStr = "";
 			URL url;
@@ -395,18 +438,18 @@ public class VTextView extends View {
 				urlStr += text.charAt(i);
 			}
 			Log.d( "url", urlStr );
-			
+
 			pageIndex[page+1] = i+1;
-			
+
 			return urlStr;
 		}
-		
+
 		return null;
 	}
 	public boolean textDraw(Canvas canvas ,int page, boolean enable , View v){
-		Log.d(TAG, "textDraw: page:  " + page);
+		//Log.d(TAG, "textDraw: page:  " + page);
 		CurrentState state = new CurrentState();
-		initPos(state.pos); 
+		initPos(state.pos);
 		initPos(state.rpos);
 		//テキスト位置を初期化
 		//Log.d("debug", "width:"+width);
@@ -414,7 +457,7 @@ public class VTextView extends View {
 
 		state.isDrawEnable = enable;
 		//draw title of page 0
-		if(page == 0){
+		/*if(page == 0){
 			//Log.d(TAG, "textDraw: 0:  ");
 			state.isTitle=true;
 			state.isRubyEnable = false;
@@ -431,7 +474,7 @@ public class VTextView extends View {
 			//textDrawProcess(canvas, state);
 			state.isTitle=false;
 			state.isRubyEnable = true;
-		}
+		}*/
 
 		int index = pageIndex[page];
 
@@ -451,7 +494,7 @@ public class VTextView extends View {
 			state.lineChangable = true;
 			state.strPrev = state.str;
 			state.str = text.charAt(index)+"";
-			state.sAfter = ( index+1 < text.length() ) ? 
+			state.sAfter = ( index+1 < text.length() ) ?
 					text.charAt(index+1)+"" : "";
 			//Log.d(TAG, "call charDrawProcess:  "+index);
 			if ( !charDrawProcess(canvas, state) ){
@@ -574,16 +617,16 @@ public class VTextView extends View {
 		return true;
 	}
 
-	boolean checkLineChangable(CurrentState state){	
+	boolean checkLineChangable(CurrentState state){
 		if( !state.lineChangable ){//連続で禁則処理はしない
 			state.lineChangable = true;
-		}else if ( state.sAfter.equals("。") || state.sAfter.equals("、") 
+		}else if ( state.sAfter.equals("。") || state.sAfter.equals("、")
 				|| state.sAfter.equals("」") || state.sAfter.equals("』")
 				|| state.sAfter.equals(")") || state.sAfter.equals("）")
 				|| state.sAfter.equals("]") || state.sAfter.equals("］")
 				|| state.sAfter.equals("}") || state.sAfter.equals("｝")
 				|| state.sAfter.equals("〉") || state.sAfter.equals("】")
-				|| state.sAfter.equals("〕") 
+				|| state.sAfter.equals("〕")
 				|| state.sAfter.equals("，") || state.sAfter.equals("．")
 				|| state.sAfter.equals(".") || state.sAfter.equals(",")){
 			state.lineChangable = false;
@@ -607,7 +650,7 @@ public class VTextView extends View {
 		boolean isRubyBody = false;
 		boolean lineChangable = true;
 		boolean isPageEnd = false;
-		boolean hasImage = false;	
+		boolean hasImage = false;
 
 		PointF pos;//カーソル位置
 		PointF rpos;//ルビカーソル位置
@@ -648,13 +691,13 @@ public class VTextView extends View {
 	//ページ数計算処理
 	//onMeasureが走ってからでないと計算できない為onCreateタイミングでcalcPageしてもダメ
 
-	OnPageClacListener onPageClacListener;
+	OnPageCalculateListener onPageCalculateListener;
 
-	public void setOnPageClacListener(OnPageClacListener onPageClacListener){
-		this.onPageClacListener = onPageClacListener;
+	public void setOnPageCalculateListener(OnPageCalculateListener onPageCalculateListener){
+		this.onPageCalculateListener = onPageCalculateListener;
 	}
 
-	public static interface OnPageClacListener{
+	public static interface OnPageCalculateListener {
 		public void onPageClac(int total);
 	}
 }

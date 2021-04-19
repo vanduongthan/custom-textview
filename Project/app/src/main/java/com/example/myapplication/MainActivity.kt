@@ -7,6 +7,7 @@ import com.example.myapplication.textview.VTextLayout
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
     lateinit var vTextLayout: VTextLayout
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity() {
             findViewById<View>(R.id.vTextLayout) as VTextLayout
         vTextLayout.initContent("たいとる", text)
         vTextLayout.setFont(VTextLayout.Font.IPA)
+        btnRotate.setOnClickListener { vTextLayout.rotate() }
         //vTextLayout.setScrollDisabled(true);
     }
 }

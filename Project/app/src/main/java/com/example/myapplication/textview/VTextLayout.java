@@ -30,75 +30,95 @@ import androidx.viewpager.widget.ViewPager;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.concurrent.ExecutionException;
 
 import com.example.myapplication.R;
-import com.example.myapplication.textview.VTextView.OnPageClacListener;
-
 
 public class VTextLayout extends RelativeLayout{
-	
+
 	private final float PAGING_BAR_SIZE = 60;
-	
+
 	Context mContext;
-	
-	public VTextView vTextView;//あんまり良くないけど…
-	
+
+	VTextView vTextView;
+
 	ReversedViewPager viewPager;
 	PagerAdapter adapter;
-	
+
 	FontLoader saveFont;
-	
+
 	int currentPage = 1;
-	
+
 	ReversedSeekBar pagingBar;
 	View pagingBarLayout;
-	
+
 	View imageLoadingLayout;
-	
+
 	TextView pageNumText;
-	
+
 	ProgressBar progressBar;
 
 	OnPageEndListener onPageEndListener = null;
-	
-	
+
+	boolean mIsVertical = false;
+
+	String mContent = "";
+
 	private float density;
-	
-	
-	
+
+
+
 	public VTextLayout(Context context) {
 		super(context);
 		init(context);
 	}
-	
+
 	public VTextLayout(Context context, AttributeSet attrs) {
 		super(context,attrs);
 		init(context);
 	}
-	
+
 	public VTextLayout(Context context, AttributeSet attrs ,int def) {
 		super(context,attrs,def);
 		init(context);
 	}
-	
-	
+
+	public void rotate() throws ExecutionException, InterruptedException {
+		// danh dau index ky tu dau tien cua page
+		int currentItem = viewPager.getCurrentItem();
+		int currentPage = viewPager.MAX_PAGE - currentItem;
+		int startIndexCurrentPage = vTextView.pageIndex[currentPage - 1];
+		Log.d("duongtv", "rotate: "+ startIndexCurrentPage);
+		vTextView.setMarkedIndex(startIndexCurrentPage);
+		//vTextView.setMarkedIndex(markedIndex);
+		int newPage = vTextView.rotate();
+		viewPager.setAdapter(adapter);
+		viewPager.setCurrentItem(newPage + 1);
+	}
+
+	@Override
+	protected void onDraw(Canvas canvas) {
+		super.onDraw(canvas);
+		Log.d("duongtv", "onDraw: VTextLayout");
+	}
+
 	@SuppressLint("AppCompatCustomView")
 	class DispView extends ImageView {
 
 		int page;
 		RotateAnimation rotate;
 		boolean isLoading = false;
-		
+
 		/*public void onStartBitmapLoad(){
 			//ローディング開始描画
 			this.setImageResource(R.drawable.loading);
-			
+
 			//アニメーション指定　コンストラクタでやるとサイズが分からない事に注意
 			rotate = new RotateAnimation(0, 360, this.getWidth()/2, this.getHeight()/2); // imgの中心を軸に、0度から360度にかけて回転
 			rotate.setDuration(1000); // 3000msかけてアニメーションする
 			rotate.setRepeatCount(Animation.INFINITE);
 			this.startAnimation(rotate);
-			
+
 			this.invalidate();
 		}*/
 
@@ -107,20 +127,19 @@ public class VTextLayout extends RelativeLayout{
 			this.clearAnimation();
 			this.invalidate();
 		}
-		
+
 		public DispView(Context context ,int page) {
 			super(context);
 			this.page = page;
-			
 		}
-		
+
 		@Override
 		public void onDraw(Canvas canvas){
 			//imageLoadingLayout.setVisibility(View.GONE);
 			//画像が設定されていなければ文字の読み込み
+			Log.d("duongtv", "onDraw DispView: ");
 			String image = vTextView.checkImage(page);
 			if(image == null ){
-				Log.d("duongtv", "onDraw page: ");
 				vTextView.drawPage(canvas, page , this );
 			}else{
 				if( !isLoading || this.getDrawable() == null){
@@ -128,12 +147,10 @@ public class VTextLayout extends RelativeLayout{
 					//task.execute();
 					isLoading = true;
 				}
-				
 				super.onDraw(canvas);
 			}
-			
 		};
-		
+
 		class DrawImageTask extends AsyncTask<String, Integer, Double> {
 			Bitmap bmp;
 			//Canvas canvas;
@@ -168,35 +185,31 @@ public class VTextLayout extends RelativeLayout{
 			}
 		};
 	}
-	
+
 	public void init(Context context){
 		LayoutInflater.from(context).inflate(R.layout.vtext, this);
 		this.mContext = context;
-		
+
 		saveFont = new FontLoader();
-		
+
 		//vTextView = (VTextView) findViewById(R.id.vTextView);
-		vTextView = new VTextView( context );
-		
+		vTextView = new VTextView(context);
+
 		//ページ数計算が終ったときの処理
-		vTextView.setOnPageClacListener(new OnPageClacListener(){
-			@Override
-			public void onPageClac(int total) {
-				viewPager.totalPage = total;
-				progressBar.setVisibility(View.GONE);
-				updatePageText();
-			}
-			
+		vTextView.setOnPageCalculateListener(total -> {
+			viewPager.totalPage = total;
+			progressBar.setVisibility(View.GONE);
+			updatePageText();
 		});
-		
+
 		//アダプター作成
 		adapter = new PagerAdapter(){
 			@Override
 			public Object instantiateItem(ViewGroup container, int position) {
 				//左スクロールにするためにページとポジションを反転
 				//ReversedViewPagerはsetCurrentItemを上書きしているが、ここで来るpositionは生のモノ
-				final Integer page = ReversedViewPager.MAX_PAGE - position -1;
-				
+				final Integer page =ReversedViewPager.MAX_PAGE - position -1;
+
 				//最初のページだけ純正のvTextView
 				if( page == 0){
 					container.addView(vTextView);
@@ -208,7 +221,7 @@ public class VTextLayout extends RelativeLayout{
 				container.addView(view);
 				return view;
 			}
-			
+
 			@Override
 			public int getCount() {
 				return ReversedViewPager.MAX_PAGE; //左スクロールにするためにページを確保
@@ -219,30 +232,33 @@ public class VTextLayout extends RelativeLayout{
 				// コンテナから View を削除
 				container.removeView((View) object);
 			}
-			
+
 			@Override
 			public boolean isViewFromObject(View view, Object object) {
 				return view == (View) object;
 			}
-			
+
 		};
-		
+
 		//ページャを作成
 		viewPager = findViewById(R.id.view_pager);
 		viewPager.setAdapter(adapter);
-		
+
 		//ページ切り替え時の処理
 		viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 			@Override
 			public void onPageSelected(int position) {
 				currentPage = position;
+				//vTextView.setCurrentPage(position);
 				updatePageText();
-				
+
 				if( position >= viewPager.totalPage && onPageEndListener != null){
 					onPageEndListener.onPageEnd();
 				}
 				Log.d("duongtv", "onPageSelected: "+position);
-				Log.d("page",currentPage+"");
+				/*Log.d("duongtv", "onPageSelected: index: "+ vTextView.pageIndex[position - 1]);
+				Log.d("duongtv", "onPageSelected: charAt: index - 1 "+ vTextView.text.charAt(vTextView.pageIndex[position - 1] - 1));
+				Log.d("duongtv", "onPageSelected: charAt: "+ vTextView.text.charAt(vTextView.pageIndex[position - 1]));*/
 			}
 
 			@Override
@@ -253,22 +269,22 @@ public class VTextLayout extends RelativeLayout{
 			public void onPageScrolled(int arg0, float arg1, int arg2) {
 			}
 		});
-		
-		
+
+
 		imageLoadingLayout = findViewById(R.id.imageLoading);
-		
+
 		pagingBar = (ReversedSeekBar) findViewById(R.id.seekBar);
 		pageNumText = (TextView) findViewById(R.id.pageNumText);
 		pagingBarLayout = findViewById(R.id.seekBarLayout);
 		progressBar =(ProgressBar) findViewById(R.id.vtextProgressBar);
-		
+
 		density = getResources().getDisplayMetrics().density;//画面クリック位置判定用
-		
+
 		// ページ送りバー
 		pagingBarLayout.setVisibility(View.GONE);
 		pagingBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 			public void onProgressChanged(SeekBar seekBar,
-					int progress, boolean fromUser) {	
+										  int progress, boolean fromUser) {
 				// ツマミをドラッグしたときに呼ばれる
 				if(pagingBarLayout.getVisibility() == View.VISIBLE){
 					updatePageText();
@@ -279,113 +295,112 @@ public class VTextLayout extends RelativeLayout{
 			public void onStartTrackingTouch(SeekBar seekBar) {}
 			public void onStopTrackingTouch(SeekBar seekBar) {}
 		});
-		
+
 		//ページカウントバー
 		progressBar.setVisibility(View.VISIBLE);
-		
+
 	}
-	
+
 	void updatePageText(){
 		String text = vTextView.getTotalPage() < 0 ?  currentPage+"" : currentPage + "/" + (vTextView.getTotalPage()+1 );
 		pageNumText.setText( text );
-		Log.d("hihi", text);
 		//TEMP
 		//pageNumText.setText(this.viewPager.virtualX+"");
 	}
-	
-	
-	
-	
+
+
+
+
 	public void updatePageNum( final boolean showSeekBar ){
 		pagingBar.setMax(vTextView.getTotalPage());
 		pagingBar.setProgress( currentPage );
-		
+
 		updatePageText();
 		progressBar.setVisibility(View.GONE);
 		if( showSeekBar )pagingBarLayout.setVisibility(View.VISIBLE);
-		
+
 	}
-	
+
 	private float touchStartX;
 	private float touchStartY;
-	
-	
+
+
 	@Override
 	public boolean  onInterceptTouchEvent(MotionEvent ev) {
 		//Log.d("touch vt layout", ev.getY() +":"+ getHeight()  );
-		
-		switch (ev.getAction() ) {
-		case MotionEvent.ACTION_DOWN :
-			//下エリアをタッチした時にバーが非表示なら表示、
-			//それ以外をタッチした時にバーが表示なら非表示に
 
-			if( ev.getY() >  getHeight() - PAGING_BAR_SIZE *density ){
-				if( pagingBarLayout.getVisibility() != View.VISIBLE  && vTextView.getTotalPage() > 0){
-					updatePageNum(true);
-					return true;
-				}
-			}else {
-				if( pagingBarLayout.getVisibility() == View.VISIBLE ){
-					pagingBarLayout.setVisibility(View.INVISIBLE);
-					return true;
-				}
-			}
-			//初期値を保存。ページ送り方向は初期値で決定
-			touchStartX = ev.getX();
-			touchStartY = ev.getY();
-			break;
-		case MotionEvent.ACTION_UP:
-			if( viewPager.scrollDisabled ){//ページングが有効ならクリックでページ送り
-				if( vTextView.mVertical){//縦書きの場合
-					int direction =  isClickDirectionLeft ? 1 : -1; //方向によって係数を変える
-					if( direction * touchStartX > direction * vTextView.width /2 ) {
-						if( currentPage > 1 ) {
-							viewPager.setCurrentItem( currentPage -1 , false);
-						}
-					}else{
-						if( currentPage < vTextView.getTotalPage() ||  vTextView.getTotalPage() < 0 ){
-							viewPager.setCurrentItem( currentPage +1 , false);
-						}
+		switch (ev.getAction() ) {
+			case MotionEvent.ACTION_DOWN :
+				//下エリアをタッチした時にバーが非表示なら表示、
+				//それ以外をタッチした時にバーが表示なら非表示に
+
+				if( ev.getY() >  getHeight() - PAGING_BAR_SIZE *density ){
+					if( pagingBarLayout.getVisibility() != View.VISIBLE  && vTextView.getTotalPage() > 0){
+						updatePageNum(true);
+						return true;
 					}
-				}else{//横書きの場合
-					if( touchStartY > vTextView.height /2 ) {
-						if( currentPage > 1 ) {
-							viewPager.setCurrentItem( currentPage -1 , false);
-						}
-					}else{
-						if( currentPage < vTextView.getTotalPage() ||  vTextView.getTotalPage() < 0 ){
-							viewPager.setCurrentItem( currentPage +1 , false);
-						}
+				}else {
+					if( pagingBarLayout.getVisibility() == View.VISIBLE ){
+						pagingBarLayout.setVisibility(View.INVISIBLE);
+						return true;
 					}
 				}
-			}
-			updatePageText();
+				//初期値を保存。ページ送り方向は初期値で決定
+				touchStartX = ev.getX();
+				touchStartY = ev.getY();
+				break;
+			case MotionEvent.ACTION_UP:
+				if( viewPager.scrollDisabled ){//ページングが有効ならクリックでページ送り
+					if( vTextView.getVertical()){//縦書きの場合
+						int direction =  isClickDirectionLeft ? 1 : -1; //方向によって係数を変える
+						if( direction * touchStartX > direction * vTextView.width /2 ) {
+							if( currentPage > 1 ) {
+								viewPager.setCurrentItem( currentPage -1 , false);
+							}
+						}else{
+							if( currentPage < vTextView.getTotalPage() ||  vTextView.getTotalPage() < 0 ){
+								viewPager.setCurrentItem( currentPage +1 , false);
+							}
+						}
+					}else{//横書きの場合
+						if( touchStartY > vTextView.height /2 ) {
+							if( currentPage > 1 ) {
+								viewPager.setCurrentItem( currentPage -1 , false);
+							}
+						}else{
+							if( currentPage < vTextView.getTotalPage() ||  vTextView.getTotalPage() < 0 ){
+								viewPager.setCurrentItem( currentPage +1 , false);
+							}
+						}
+					}
+				}
+				updatePageText();
 		}
-		
+
 		return super.onInterceptTouchEvent(ev);
 	}
-	
+
 	//スクロールの無効化。クリックでページ送り
 	public void setScrollDisabled(boolean isDisabled){
-		 viewPager.setScrollDisabled(isDisabled);
+		viewPager.setScrollDisabled(isDisabled);
 	}
-	
+
 	boolean isClickDirectionLeft = true;
-	
+
 	//クリックでページ送りの方向
 	public void setClickDirectionLeft(boolean isClickDirectionLeft){
 		this.isClickDirectionLeft = isClickDirectionLeft;
 	}
-	
+
 	//VTextViewへのラッパー群
 	public void initContent(String title ,String text){
-	
+		mContent = text;
 		this.vTextView.setText(text);
 		this.vTextView.setTitle(title);
-		
+
 		//reset();
 	}
-	
+
 	@Override
 	public void onLayout(boolean changed, int l, int t, int r, int b){
 		if(changed){
@@ -394,14 +409,14 @@ public class VTextLayout extends RelativeLayout{
 		}
 		super.onLayout(changed, l, t, r, b);
 	}
-	
+
 	public void reset(){
 		viewPager.totalPage = -1;
 		//viewPager.removeAllViews();
 		viewPager.setCurrentItem(0);
 		vTextView.invalidate();
 	}
-	
+
 	public interface OnPageEndListener {
 		void onPageEnd();
 	}
@@ -410,20 +425,14 @@ public class VTextLayout extends RelativeLayout{
 	public void setOnPageEndListener( OnPageEndListener onPageEndListener){
 		this.onPageEndListener = onPageEndListener;
 	}
-	
-	
-	public void setVirtical(boolean isVirtical){
-		vTextView.mVertical = isVirtical;
-	}
-	
-	
-	
+
+
 	public void setFontSize(int size){
 		vTextView.setFontSize(size);;
 	}
-	
+
 	public enum Font { NORMAL, IPA };
-	
+
 	//フォント指定
 	public void setFont(Font font ){
 		switch(font){
@@ -442,10 +451,10 @@ public class VTextLayout extends RelativeLayout{
 				break;
 		}
 	}
-	
+
 	public void downloadFont(){
 		AlertDialog.Builder alertDialog = new AlertDialog.Builder( mContext );
-		
+
 		// ダイアログの設定
 		alertDialog.setTitle("フォントのダウンロード");      //タイトル設定
 		alertDialog.setMessage("IPA明朝フォントがオススメです。ダウンロードしますか？");  //内容(メッセージ)設定
@@ -472,16 +481,13 @@ public class VTextLayout extends RelativeLayout{
 
 		// ダイアログの作成と描画
 		alertDialog.show();
-
 	}
 
-	
+
 	public void setColor(String fontColor,String backgroundColor){
 		vTextView.setColor(fontColor, backgroundColor);
 		this.setBackgroundColor(Color.parseColor(backgroundColor));
 		pageNumText.setTextColor(Color.parseColor(fontColor));
-		
 		reset();
 	}
-	
 }

@@ -8,6 +8,14 @@
     <com.example.myapplication.textview.VTextLayout
         android:id="@+id/vTextLayout"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent" />
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="rotate"
+        android:layout_gravity="center_horizontal"
+        android:id="@+id/btnRotate"/>
 
 </LinearLayout>
