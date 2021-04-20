@@ -28,9 +28,9 @@ public class VTextView extends View {
 	private static final int BOTTOM_SPACE = 18;
 	public static final int MAX_PAGE = 1024;
 
-	int TITLE_SIZE = 480;
-	int FONT_SIZE = 320;
-	int RUBY_SIZE = 160;
+	int TITLE_SIZE = 48;
+	int FONT_SIZE = 32;
+	int RUBY_SIZE = 16;
 
 	private int mMarkedIndex = 0;
 
