@@ -13,7 +13,6 @@ import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.RotateAnimation;
@@ -24,13 +23,17 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-import androidx.viewpager.widget.PagerAdapter;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.widget.ViewPager2;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
+import java.util.zip.Inflater;
 
 import com.example.myapplication.R;
 
@@ -40,10 +43,10 @@ public class VTextLayout extends RelativeLayout{
 
 	Context mContext;
 
-	VTextView vTextView;
+	public VTextView vTextView;
 
-	ReversedViewPager viewPager;
-	PagerAdapter adapter;
+	ViewPager2 viewPager;
+	ReverseViewPagerAdapter mViewPagerAdapter;
 
 	FontLoader saveFont;
 
@@ -82,18 +85,35 @@ public class VTextLayout extends RelativeLayout{
 		super(context,attrs,def);
 		init(context);
 	}
+	int direction = LAYOUT_DIRECTION_LTR;
 
 	public void rotate() throws ExecutionException, InterruptedException {
 		// danh dau index ky tu dau tien cua page
-		int currentItem = viewPager.getCurrentItem();
-		int currentPage = viewPager.MAX_PAGE - currentItem;
+		/*int currentItem = viewPager.getCurrentItem();
+		int currentPage = currentItem+1;
 		int startIndexCurrentPage = vTextView.pageIndex[currentPage - 1];
 		Log.d("duongtv", "rotate: "+ startIndexCurrentPage);
 		vTextView.setMarkedIndex(startIndexCurrentPage);
 		//vTextView.setMarkedIndex(markedIndex);
 		int newPage = vTextView.rotate();
-		viewPager.setAdapter(adapter);
-		viewPager.setCurrentItem(newPage + 1);
+		viewPager.setAdapter(mViewPagerAdapter);
+		viewPager.setCurrentItem(newPage + 1);*/
+		//vTextView.rotate();
+		if(direction == LAYOUT_DIRECTION_RTL){
+			direction = LAYOUT_DIRECTION_LTR;
+		} else direction = LAYOUT_DIRECTION_RTL;
+		viewPager.setLayoutDirection(direction);
+		int markedPage = mViewPagerAdapter.rotate();
+		viewPager.setAdapter(mViewPagerAdapter);
+
+		int currentItem = viewPager.getCurrentItem();
+		int startIndexCurrentPage = VTextView.pageIndex[currentItem];
+
+		Log.d("duongtv", "rotate: "+ startIndexCurrentPage);
+		vTextView.setMarkedIndex(startIndexCurrentPage);
+		viewPager.setCurrentItem(markedPage );
+		Log.d("duongtv", "rotate: markedPage: "+ markedPage);
+
 	}
 
 	@Override
@@ -194,22 +214,21 @@ public class VTextLayout extends RelativeLayout{
 
 		//vTextView = (VTextView) findViewById(R.id.vTextView);
 		vTextView = new VTextView(context);
-
 		//ページ数計算が終ったときの処理
 		vTextView.setOnPageCalculateListener(total -> {
-			viewPager.totalPage = total;
+			//viewPager.totalPage = total;
 			progressBar.setVisibility(View.GONE);
 			updatePageText();
 		});
-
+		mViewPagerAdapter = new ReverseViewPagerAdapter((FragmentActivity) getContext(), mContent);
 		//アダプター作成
-		adapter = new PagerAdapter(){
+		/*adapter = new PagerAdapter(){
 			@Override
 			public Object instantiateItem(ViewGroup container, int position) {
 				//左スクロールにするためにページとポジションを反転
 				//ReversedViewPagerはsetCurrentItemを上書きしているが、ここで来るpositionは生のモノ
-				final Integer page =ReversedViewPager.MAX_PAGE - position -1;
-
+				//final Integer page =ReversedViewPager.MAX_PAGE - position -1;
+				int page = position;
 				//最初のページだけ純正のvTextView
 				if( page == 0){
 					container.addView(vTextView);
@@ -238,27 +257,27 @@ public class VTextLayout extends RelativeLayout{
 				return view == (View) object;
 			}
 
-		};
+		};*/
 
 		//ページャを作成
 		viewPager = findViewById(R.id.view_pager);
-		viewPager.setAdapter(adapter);
+		viewPager.setAdapter(mViewPagerAdapter);
 
 		//ページ切り替え時の処理
-		viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+		/*viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 			@Override
 			public void onPageSelected(int position) {
 				currentPage = position;
 				//vTextView.setCurrentPage(position);
 				updatePageText();
 
-				if( position >= viewPager.totalPage && onPageEndListener != null){
+				*//*if( position >= viewPager.totalPage && onPageEndListener != null){
 					onPageEndListener.onPageEnd();
-				}
+				}*//*
 				Log.d("duongtv", "onPageSelected: "+position);
-				/*Log.d("duongtv", "onPageSelected: index: "+ vTextView.pageIndex[position - 1]);
+				*//*Log.d("duongtv", "onPageSelected: index: "+ vTextView.pageIndex[position - 1]);
 				Log.d("duongtv", "onPageSelected: charAt: index - 1 "+ vTextView.text.charAt(vTextView.pageIndex[position - 1] - 1));
-				Log.d("duongtv", "onPageSelected: charAt: "+ vTextView.text.charAt(vTextView.pageIndex[position - 1]));*/
+				Log.d("duongtv", "onPageSelected: charAt: "+ vTextView.text.charAt(vTextView.pageIndex[position - 1]));*//*
 			}
 
 			@Override
@@ -268,7 +287,7 @@ public class VTextLayout extends RelativeLayout{
 			@Override
 			public void onPageScrolled(int arg0, float arg1, int arg2) {
 			}
-		});
+		});*/
 
 
 		imageLoadingLayout = findViewById(R.id.imageLoading);
@@ -297,7 +316,7 @@ public class VTextLayout extends RelativeLayout{
 		});
 
 		//ページカウントバー
-		progressBar.setVisibility(View.VISIBLE);
+		//progressBar.setVisibility(View.VISIBLE);
 
 	}
 
@@ -325,7 +344,7 @@ public class VTextLayout extends RelativeLayout{
 	private float touchStartY;
 
 
-	@Override
+	/*@Override
 	public boolean  onInterceptTouchEvent(MotionEvent ev) {
 		//Log.d("touch vt layout", ev.getY() +":"+ getHeight()  );
 
@@ -378,12 +397,12 @@ public class VTextLayout extends RelativeLayout{
 		}
 
 		return super.onInterceptTouchEvent(ev);
-	}
+	}*/
 
 	//スクロールの無効化。クリックでページ送り
-	public void setScrollDisabled(boolean isDisabled){
+	/*public void setScrollDisabled(boolean isDisabled){
 		viewPager.setScrollDisabled(isDisabled);
-	}
+	}*/
 
 	boolean isClickDirectionLeft = true;
 
@@ -395,6 +414,7 @@ public class VTextLayout extends RelativeLayout{
 	//VTextViewへのラッパー群
 	public void initContent(String title ,String text){
 		mContent = text;
+		mViewPagerAdapter.setData(mContent);
 		this.vTextView.setText(text);
 		this.vTextView.setTitle(title);
 
@@ -411,7 +431,7 @@ public class VTextLayout extends RelativeLayout{
 	}
 
 	public void reset(){
-		viewPager.totalPage = -1;
+		//viewPager.totalPage = -1;
 		//viewPager.removeAllViews();
 		viewPager.setCurrentItem(0);
 		vTextView.invalidate();

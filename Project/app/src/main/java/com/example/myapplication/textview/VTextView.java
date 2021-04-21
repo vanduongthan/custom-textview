@@ -27,10 +27,10 @@ public class VTextView extends View {
 	private static final int TOP_SPACE = 18;
 	private static final int BOTTOM_SPACE = 18;
 	public static final int MAX_PAGE = 1024;
-
-	int TITLE_SIZE = 48;
-	int FONT_SIZE = 32;
-	int RUBY_SIZE = 16;
+	int x = 1;
+	int TITLE_SIZE = 48*x;
+	int FONT_SIZE = 32*x;
+	int RUBY_SIZE = 16*x;
 
 	private int mMarkedIndex = 0;
 
@@ -48,9 +48,9 @@ public class VTextView extends View {
 	private String title = "タイトル";
 
 	//private int textIndex = 0;
-	int[] pageIndex = new int[MAX_PAGE];
+	static int[] pageIndex = new int[MAX_PAGE];
 	private int currentPage = 0;
-	public int totalPage = -1;
+	public static int totalPage = -1;
 	//private boolean isPageEnd = false;
 	int imageNum = 0;
 	private boolean isNextImage = false;//次に画像がある
@@ -60,7 +60,7 @@ public class VTextView extends View {
 	int width;
 	int height;
 
-	private boolean mVertical = true;
+	private boolean mVertical = false; //default text is drawn horizontal Right to Left and Top to Bottom
 
 
 	//methods
@@ -117,9 +117,15 @@ public class VTextView extends View {
 		mVertical = isVertical;
 	}
 	//set change orientation and calculate page containt marked index
-	public int rotate() throws ExecutionException, InterruptedException {
+	public int rotate() {
 		mVertical = !mVertical;
-		totalPage = (int) mExecutorService.submit(new CalculatorPageCallable(this)).get();
+		try {
+			totalPage = (int) mExecutorService.submit(new CalculatorPageCallable(this)).get();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		int page = 0;
 		while(page < MAX_PAGE - 1 && pageIndex[page + 1] <= mMarkedIndex){
 			page++;
@@ -383,19 +389,19 @@ public class VTextView extends View {
 		super.onDraw(canvas);
 		this.textDraw(canvas , currentPage,true, this);
 		Log.d(TAG,"onDraw VTextView: "+ currentPage);
-		if( this.totalPage < 0 ) {
-			try {
-				this.calcPages();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+		/*if( this.totalPage < 0 ) {
+			this.calcPages();
+		}*/
 	}
 
-	public void calcPages() throws ExecutionException, InterruptedException {
-		totalPage = (int)mExecutorService.submit(new CalculatorPageCallable(this)).get();
+	public void calcPages() {
+		try {
+			totalPage = (int)mExecutorService.submit(new CalculatorPageCallable(this)).get();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		if( onPageCalculateListener != null) onPageCalculateListener.onPageClac(totalPage);
 	}
 

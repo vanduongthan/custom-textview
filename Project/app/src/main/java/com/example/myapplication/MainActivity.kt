@@ -8,6 +8,7 @@ import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.vtext.view.*
 import java.util.regex.Pattern
 
 class MainActivity : AppCompatActivity() {
@@ -35,14 +36,15 @@ class MainActivity : AppCompatActivity() {
         }
         vTextLayout =
             findViewById<View>(R.id.vTextLayout) as VTextLayout
-        vTextLayout.initContent("たいとる", trimMarkDownAndAuthor(text))
+        vTextLayout.initContent("たいとる", text)
         vTextLayout.setFont(VTextLayout.Font.IPA)
-        btnRotate.setOnClickListener { vTextLayout.rotate() }
+        btnRotate.setOnClickListener {
+            vTextLayout.rotate()
+        }
         //vTextLayout.setScrollDisabled(true);
     }
 
-    private fun trimMarkDownAndAuthor(text: String): String{
-
+    private fun trimMarkDownAndInfo(text: String): String{
         val regexMarkDown = "-{10,}\\n((.+\\n{1,2}){1,2})*-{10,}\\n"
         //Log.d("hihi", "match: " + Pattern.matches(regex, text))
         /*val pattern = Pattern.compile(regexMarkDown)
@@ -56,5 +58,9 @@ class MainActivity : AppCompatActivity() {
         val regexAuthor = "底本：(.+\\n)+(初出：)(.+\\n)+.*"
         outputText = Pattern.compile(regexAuthor).matcher(outputText).replaceFirst("")
         return outputText
+    }
+
+    private fun initTableOfContent(text: String){
+
     }
 }

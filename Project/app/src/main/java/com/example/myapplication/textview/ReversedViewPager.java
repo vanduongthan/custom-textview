@@ -18,7 +18,8 @@ public class ReversedViewPager extends ViewPager {
 	
 	boolean leftScrollDisabled = false;
 	boolean scrollDisabled = false;
-	
+	boolean isSwipeRTL = true; //when text is drawn horizontal, swipe from Right to Left
+
 	int totalPage = -1;
 	int currentPage;
 
